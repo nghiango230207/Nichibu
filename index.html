@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>💕Hedspi Nichibu💕</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Pacifico&family=Nunito:wght@300;400;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --pink: #ff69b4;
+    --pink-light: #ffb6d9;
+    --gold: #ffd700;
+    --red: #ff2d55;
+    --bg: #050510;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    font-family: 'Nunito', sans-serif;
+    color: #fff;
+  }
+
+  #video {
+    position: fixed;
+    inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+    z-index: 1;
+    opacity: 0.92;
+  }
+
+  #p5canvas-container {
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* UI overlay */
+  #ui {
+    position: fixed;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px 20px;
+  }
+
+  /* Top bar */
+  #top-bar {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    pointer-events: all;
+  }
+
+  #title {
+    font-family: 'Pacifico', cursive;
+    font-size: clamp(1.3rem, 3.5vw, 2.2rem);
+    color: #ff2d55;
+    text-shadow:
+      0 0 8px #ff69b4cc,
+      0 0 20px #ff69b490,
+      0 0 40px #ff69b450,
+      0 0 70px #ff69b430;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    user-select: none;
+    animation: titlePulse 3s ease-in-out infinite;
+  }
+
+  @keyframes titlePulse {
+    0%, 100% { text-shadow: 0 0 8px #ff69b4cc, 0 0 20px #ff69b490, 0 0 40px #ff69b450, 0 0 70px #ff69b430; }
+    50% { text-shadow: 0 0 12px #ff69b4ff, 0 0 30px #ff69b4bb, 0 0 60px #ff69b480, 0 0 100px #ff69b440; }
+  }
+
+  #camera-select {
+    appearance: none;
+    background: rgba(5, 5, 20, 0.75);
+    border: 1.5px solid rgba(255, 105, 180, 0.55);
+    color: var(--pink-light);
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 7px 30px 7px 12px;
+    border-radius: 30px;
+    cursor: pointer;
+    outline: none;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: border-color 0.3s, box-shadow 0.3s;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M0 0l6 8 6-8z' fill='%23ff69b4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    min-width: 150px;
+    max-width: 230px;
+  }
+  #camera-select:hover, #camera-select:focus {
+    border-color: var(--pink);
+    box-shadow: 0 0 12px rgba(255,105,180,0.4);
+  }
+  #camera-select option { background: #0d0d20; color: #fff; }
+
+  /* Status badge */
+  #status-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    padding: 5px 14px;
+    border-radius: 20px;
+    background: rgba(5,5,20,0.7);
+    border: 1px solid rgba(255,105,180,0.35);
+    color: #aaa;
+    backdrop-filter: blur(8px);
+    transition: all 0.4s;
+    white-space: nowrap;
+  }
+  #status-badge.active {
+    color: var(--pink);
+    border-color: rgba(255,105,180,0.7);
+    box-shadow: 0 0 10px rgba(255,105,180,0.3);
+  }
+
+  /* Image indicator */
+  #img-indicator {
+    display: flex;
+    gap: 7px;
+    align-items: center;
+  }
+  .img-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.25);
+    border: 1px solid rgba(255,255,255,0.3);
+    transition: all 0.3s;
+  }
+  .img-dot.active {
+    background: var(--pink);
+    box-shadow: 0 0 8px var(--pink);
+    transform: scale(1.35);
+  }
+
+  /* Bottom instruction */
+  #instruction {
+    font-size: clamp(0.7rem, 1.8vw, 0.9rem);
+    font-weight: 400;
+    color: rgba(255,255,255,0.65);
+    text-align: center;
+    letter-spacing: 0.03em;
+    background: rgba(5,5,20,0.55);
+    padding: 8px 20px;
+    border-radius: 30px;
+    border: 1px solid rgba(255,105,180,0.2);
+    backdrop-filter: blur(10px);
+    user-select: none;
+  }
+
+  #middle-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    justify-content: flex-end;
+    padding-bottom: 12px;
+  }
+
+  /* Loading overlay */
+  #loading {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    transition: opacity 0.8s;
+  }
+  #loading.hidden { opacity: 0; pointer-events: none; }
+
+  .loading-heart {
+    font-size: 3rem;
+    animation: loadBeat 0.8s ease-in-out infinite;
+  }
+  @keyframes loadBeat {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.25); }
+  }
+  .loading-text {
+    font-family: 'Pacifico', cursive;
+    font-size: 1.5rem;
+    color: var(--pink);
+    text-shadow: 0 0 20px var(--pink);
+  }
+  .loading-sub {
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.5);
+  }
+  .loading-bar-wrap {
+    width: 200px; height: 3px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .loading-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--pink), var(--gold));
+    border-radius: 2px;
+    animation: loadBar 2s ease-in-out infinite;
+  }
+  @keyframes loadBar {
+    0% { width: 0%; }
+    60% { width: 90%; }
+    100% { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Loading screen -->
+<div id="loading">
+  <div class="loading-heart">💕</div>
+  <div class="loading-text">Đào lại CLB cùng với chúng mình nhé!</div>
+  <div class="loading-sub">Cho xin cái truy cập Camera đi:>></div>
+  <div class="loading-bar-wrap"><div class="loading-bar"></div></div>
+</div>
+
+<!-- Video background -->
+<video id="video" autoplay muted playsinline></video>
+
+<!-- p5.js canvas container -->
+<div id="p5canvas-container"></div>
+
+<!-- UI overlay -->
+<div id="ui">
+  <div id="top-bar">
+    <div id="title">💕Khi bọn mình quá rảnh (vì không bị dí deadline)💕</div>
+    <span id="status-badge">📷 Initializing…</span>
+    <select id="camera-select"><option value="">Loading cameras…</option></select>
+  </div>
+  <div id="middle-area">
+    <div id="img-indicator"></div>
+  </div>
+  <div id="instruction">✨Giơ 2 tay lên — sử dụng các ngón cái & ngón trỏ để tạo thành một khung hình nhé!</div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.3/p5.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+
+<script>
+// ─────────────────────────────────────────────────────────────
+//  CONFIG
+// ─────────────────────────────────────────────────────────────
+const TOTAL_IMAGES = 6;
+const MAX_SPARKS   = 80;
+const MAX_HEARTS   = 25;
+const MAX_GLITTERS = 40;
+const CLOSE_THRESH = 120;   // px – frame considered "closed"
+const MIN_FRAME_DIAG = 80;  // px – minimum diagonal to render frame
+
+// Placeholder image colours (used when images/1.webp etc. not found)
+const PALETTE = [
+  ['#ff69b4','#ff2d55','#ff9500'],
+  ['#5856d6','#007aff','#30d158'],
+  ['#ff3b30','#ff9f0a','#ffd60a'],
+  ['#34c759','#30d5c8','#007aff'],
+  ['#bf5af2','#ff375f','#ff9f0a'],
+  ['#1c1c1e','#ff69b4','#ffd700'],
+];
+
+// ─────────────────────────────────────────────────────────────
+//  GLOBALS
+// ─────────────────────────────────────────────────────────────
+let handResults  = { multiHandLandmarks: [] };
+let currentCamId = '';
+let mpCamera     = null;
+let videoEl      = document.getElementById('video');
+let camSelect    = document.getElementById('camera-select');
+let statusBadge  = document.getElementById('status-badge');
+let loadingEl    = document.getElementById('loading');
+let imgIndicator = document.getElementById('img-indicator');
+
+// ─────────────────────────────────────────────────────────────
+//  CAMERA ENUMERATION
+// ─────────────────────────────────────────────────────────────
+async function enumerateCameras() {
+  try {
+    await navigator.mediaDevices.getUserMedia({ video: true });
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const cams = devices.filter(d => d.kind === 'videoinput');
+    camSelect.innerHTML = '';
+    cams.forEach((c, i) => {
+      const opt = document.createElement('option');
+      opt.value = c.deviceId;
+      opt.textContent = c.label || `Camera ${i + 1}`;
+      camSelect.appendChild(opt);
+    });
+    if (cams.length > 0) {
+      currentCamId = cams[0].deviceId;
+      camSelect.value = currentCamId;
+    }
+  } catch (e) {
+    console.warn('Camera enum error:', e);
+  }
+}
+
+async function startCamera(deviceId) {
+  if (mpCamera) { mpCamera.stop(); mpCamera = null; }
+  const constraints = { video: { deviceId: deviceId ? { exact: deviceId } : undefined, width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }, audio: false };
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    videoEl.srcObject = stream;
+    await videoEl.play();
+    setupMediaPipe();
+    statusBadge.textContent = '🖐 Ready — show your hands!';
+    statusBadge.classList.add('active');
+    setTimeout(() => { loadingEl.classList.add('hidden'); }, 600);
+  } catch(e) {
+    statusBadge.textContent = '❌ Camera error';
+    console.error(e);
+  }
+}
+
+camSelect.addEventListener('change', () => {
+  currentCamId = camSelect.value;
+  startCamera(currentCamId);
+});
+
+// ─────────────────────────────────────────────────────────────
+//  MEDIAPIPE HANDS
+// ─────────────────────────────────────────────────────────────
+function setupMediaPipe() {
+  const hands = new Hands({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}` });
+  hands.setOptions({ maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0.7, minTrackingConfidence: 0.6 });
+  hands.onResults(results => { handResults = results; });
+
+  mpCamera = new Camera(videoEl, {
+    onFrame: async () => { await hands.send({ image: videoEl }); },
+    width: 1280, height: 720
+  });
+  mpCamera.start();
+}
+
+// ─────────────────────────────────────────────────────────────
+//  P5.JS SKETCH
+// ─────────────────────────────────────────────────────────────
+const sketch = (p) => {
+
+  // ── Particle pools ──────────────────────────────────────────
+  let sparks    = [];
+  let hearts    = [];
+  let glitters  = [];
+
+  // ── Images ──────────────────────────────────────────────────
+  let bgImages  = [];
+  let bgGraphics = []; // p5 Graphics fallback
+  let imgIndex  = 0;
+  let imgLoaded = [];
+
+  // ── Frame state ──────────────────────────────────────────────
+  let frameClosed  = false;
+  let prevClosed   = false;
+  let pulseT       = 0;
+
+  // ─────────────────────────────────────────────────────────────
+  p.preload = () => {
+    for (let i = 1; i <= TOTAL_IMAGES; i++) {
+      const idx = i - 1;
+      bgImages.push(null);
+      imgLoaded.push(false);
+      p.loadImage(
+        `images/${i}.jpg`,
+        img => { bgImages[idx] = img; imgLoaded[idx] = true; },
+        () => { imgLoaded[idx] = false; } // will use fallback
+      );
+    }
+  };
+
+  p.setup = () => {
+    const cnv = p.createCanvas(p.windowWidth, p.windowHeight);
+    cnv.parent('p5canvas-container');
+    p.colorMode(p.RGB, 255, 255, 255, 1);
+    p.textFont('serif');
+
+    // Build fallback graphics
+    for (let i = 0; i < TOTAL_IMAGES; i++) {
+      const g = p.createGraphics(400, 400);
+      const cols = PALETTE[i];
+      g.background(cols[0]);
+      g.noStroke();
+      for (let j = 0; j < 30; j++) {
+        g.fill(cols[j % cols.length] + '66');
+        g.ellipse(p.random(400), p.random(400), p.random(60, 160), p.random(60, 160));
+      }
+      g.fill(255, 255, 255, 0.12);
+      for (let j = 0; j < 12; j++) {
+        g.textSize(p.random(40, 100));
+        g.text('💕', p.random(400), p.random(400));
+      }
+      bgGraphics.push(g);
+    }
+
+    buildImgIndicator();
+  };
+
+  p.windowResized = () => { p.resizeCanvas(p.windowWidth, p.windowHeight); };
+
+  // ─────────────────────────────────────────────────────────────
+  p.draw = () => {
+    p.clear();
+    pulseT += 0.04;
+
+    const lms = handResults.multiHandLandmarks || [];
+    const W = p.width, H = p.height;
+
+    // Map landmark to canvas coords (mirrored)
+    const mapPt = (lm) => ({ x: (1 - lm.x) * W, y: lm.y * H });
+
+    // Gather fingertips from all hands
+    const TIPS = [4, 8, 12, 16, 20];
+    const TIP_COLORS = ['#ff69b4','#ff9500','#ffd700','#30d158','#007aff'];
+
+    let allTips = [];
+    lms.forEach(hand => {
+      TIPS.forEach((ti, ci) => {
+        allTips.push({ pt: mapPt(hand[ti]), color: TIP_COLORS[ci] });
+      });
+    });
+
+    // Spawn sparks from tips
+    allTips.forEach(({ pt, color }) => {
+      if (sparks.length < MAX_SPARKS && p.random() < 0.7) {
+        sparks.push(new Spark(p, pt.x, pt.y, color));
+      }
+    });
+
+    // ── Frame logic ──────────────────────────────────────────
+    let framePts = null;
+    let frameReady = false;
+
+    if (lms.length === 2) {
+      const t0 = mapPt(lms[0][4]);
+      const i0 = mapPt(lms[0][8]);
+      const t1 = mapPt(lms[1][4]);
+      const i1 = mapPt(lms[1][8]);
+
+      const four = [t0, i0, t1, i1];
+      framePts = sortQuad(four);
+      const [TL, TR, BL, BR] = framePts;
+      const diag = p.dist(TL.x, TL.y, BR.x, BR.y);
+      frameReady = diag > MIN_FRAME_DIAG;
+
+      // Closed/open detection
+      const midDist = p.dist((TL.x+TR.x)/2, (TL.y+TR.y)/2, (BL.x+BR.x)/2, (BL.y+BR.y)/2);
+      frameClosed = midDist < CLOSE_THRESH;
+      if (prevClosed && !frameClosed) { nextImage(); }
+      prevClosed = frameClosed;
+
+      // Spawn corner effects
+      if (frameReady) {
+        framePts.forEach(pt => {
+          if (glitters.length < MAX_GLITTERS && p.random() < 0.55)
+            glitters.push(new Glitter(p, pt.x, pt.y));
+          if (hearts.length < MAX_HEARTS && p.random() < 0.12)
+            hearts.push(new FloatingHeart(p, pt.x, pt.y));
+        });
+      }
+    } else {
+      frameClosed = false;
+      prevClosed  = false;
+    }
+
+    // ── Update & draw particles (behind frame) ───────────────
+    sparks   = sparks.filter(s => { s.update(); s.draw(); return s.alive; });
+    glitters = glitters.filter(g => { g.update(); g.draw(); return g.alive; });
+
+    // ── Draw frame content ───────────────────────────────────
+    if (framePts && frameReady) {
+      const [TL, TR, BL, BR] = framePts;
+
+      // === CLIPPED IMAGE ===
+      p.push();
+      p.drawingContext.save();
+      p.drawingContext.beginPath();
+      p.drawingContext.moveTo(TL.x, TL.y);
+      p.drawingContext.lineTo(TR.x, TR.y);
+      p.drawingContext.lineTo(BR.x, BR.y);
+      p.drawingContext.lineTo(BL.x, BL.y);
+      p.drawingContext.closePath();
+      p.drawingContext.clip();
+
+      // Draw image with cover fit
+      const src = (imgLoaded[imgIndex] && bgImages[imgIndex]) ? bgImages[imgIndex] : bgGraphics[imgIndex];
+      drawCoverInQuad(p, src, TL, TR, BL, BR);
+
+      // Vignette inside
+      drawVignette(p, TL, TR, BL, BR);
+
+      p.drawingContext.restore();
+      p.pop();
+
+      // === GRADIENT BORDER ===
+      drawGradientBorder(p, TL, TR, BL, BR, pulseT);
+
+      // === INNER DECORATIVE BORDER ===
+      drawInnerBorder(p, TL, TR, BL, BR);
+
+      // === CORNER GLOWS ===
+      framePts.forEach((pt, ci) => {
+        drawCornerGlow(p, pt.x, pt.y, pulseT + ci * 0.8);
+      });
+    }
+
+    // ── Floating hearts (top layer) ──────────────────────────
+    hearts = hearts.filter(h => { h.update(); h.draw(); return h.alive; });
+
+    // ── Fingertip hearts ─────────────────────────────────────
+    allTips.forEach(({ pt, color }) => {
+      drawTipHeart(p, pt.x, pt.y, color, pulseT);
+    });
+
+    // ── Status update ────────────────────────────────────────
+    if (lms.length === 0) statusBadge.textContent = '🖐 Show your hands!';
+    else if (lms.length === 1) statusBadge.textContent = '🙌 Add second hand!';
+    else statusBadge.textContent = `💕 Frame active — Image ${imgIndex + 1}/${TOTAL_IMAGES}`;
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  //  HELPERS
+  // ─────────────────────────────────────────────────────────────
+
+  function nextImage() {
+    imgIndex = (imgIndex + 1) % TOTAL_IMAGES;
+    updateImgIndicator();
+    hearts.push(...Array.from({ length: 6 }, (_, i) =>
+      new FloatingHeart(p, p.random(p.width * 0.2, p.width * 0.8), p.height * 0.6)
+    ));
+  }
+
+  function buildImgIndicator() {
+    imgIndicator.innerHTML = '';
+    for (let i = 0; i < TOTAL_IMAGES; i++) {
+      const d = document.createElement('div');
+      d.className = 'img-dot' + (i === 0 ? ' active' : '');
+      d.dataset.i = i;
+      imgIndicator.appendChild(d);
+    }
+  }
+
+  function updateImgIndicator() {
+    document.querySelectorAll('.img-dot').forEach((d, i) => {
+      d.classList.toggle('active', i === imgIndex);
+    });
+  }
+
+  function sortQuad(pts) {
+    // Sort into TL, TR, BL, BR
+    const sorted = [...pts].sort((a, b) => a.y - b.y);
+    const top    = sorted.slice(0, 2).sort((a, b) => a.x - b.x);
+    const bottom = sorted.slice(2, 4).sort((a, b) => a.x - b.x);
+    return [top[0], top[1], bottom[0], bottom[1]]; // TL, TR, BL, BR
+  }
+
+  function drawCoverInQuad(p, img, TL, TR, BL, BR) {
+    if (!img) return;
+    const cx = (TL.x + TR.x + BL.x + BR.x) / 4;
+    const cy = (TL.y + TR.y + BL.y + BR.y) / 4;
+    const qw = p.dist(TL.x, TL.y, TR.x, TR.y);
+    const qh = p.dist(TL.x, TL.y, BL.x, BL.y);
+    const iw = img.width || 400;
+    const ih = img.height || 400;
+    const scale = Math.max(qw / iw, qh / ih)*0.8;
+    const dw = iw * scale, dh = ih * scale;
+    p.image(img, cx - dw / 2, cy - dh / 2, dw, dh);
+  }
+
+  function drawVignette(p, TL, TR, BL, BR) {
+    const cx = (TL.x + TR.x + BL.x + BR.x) / 4;
+    const cy = (TL.y + TR.y + BL.y + BR.y) / 4;
+    const r  = p.dist(TL.x, TL.y, BR.x, BR.y) * 0.6;
+    const g  = p.drawingContext.createRadialGradient(cx, cy, r * 0.2, cx, cy, r);
+    g.addColorStop(0, 'rgba(255,100,150,0)');
+    g.addColorStop(1, 'rgba(255,30,80,0.35)');
+    p.drawingContext.fillStyle = g;
+    p.drawingContext.fillRect(0, 0, p.width, p.height);
+  }
+
+  function drawGradientBorder(p, TL, TR, BL, BR, t) {
+    const pts = [TL, TR, BR, BL, TL];
+    const thick = 5 + Math.sin(t) * 2;
+    p.push();
+    p.noFill();
+    p.strokeWeight(thick);
+    for (let i = 0; i < pts.length - 1; i++) {
+      const from = pts[i], to = pts[i + 1];
+      const steps = 20;
+      for (let s = 0; s < steps; s++) {
+        const tt = s / steps;
+        const tt2 = (s + 1) / steps;
+        const hue = (t * 40 + s * 18 + i * 90) % 360;
+        p.stroke(p.color(`hsl(${hue}, 100%, 60%)`));
+        p.strokeWeight(thick + Math.sin(t * 2 + s * 0.5) * 1.5);
+        const x1 = p.lerp(from.x, to.x, tt);
+        const y1 = p.lerp(from.y, to.y, tt);
+        const x2 = p.lerp(from.x, to.x, tt2);
+        const y2 = p.lerp(from.y, to.y, tt2);
+        p.line(x1, y1, x2, y2);
+      }
+    }
+    p.pop();
+  }
+
+  function drawInnerBorder(p, TL, TR, BL, BR) {
+    const cx = (TL.x + TR.x + BL.x + BR.x) / 4;
+    const cy = (TL.y + TR.y + BL.y + BR.y) / 4;
+    const s = (pt) => ({
+      x: cx + (pt.x - cx) * 0.92,
+      y: cy + (pt.y - cy) * 0.92
+    });
+    p.push();
+    p.noFill();
+    p.stroke(255, 255, 255, 0.35);
+    p.strokeWeight(1.5);
+    p.beginShape();
+    [s(TL), s(TR), s(BR), s(BL)].forEach(pt => p.vertex(pt.x, pt.y));
+    p.endShape(p.CLOSE);
+    p.pop();
+  }
+
+  function drawCornerGlow(p, x, y, t) {
+    const r = 18 + Math.sin(t) * 6;
+    p.push();
+    p.noStroke();
+    for (let i = 3; i >= 0; i--) {
+      const alpha = 0.08 + i * 0.06;
+      const rr = r + i * 10;
+      p.fill(255, 105, 180, alpha);
+      p.ellipse(x, y, rr * 2, rr * 2);
+    }
+    p.fill(255, 220, 240, 0.9);
+    p.textSize(18);
+    p.textAlign(p.CENTER, p.CENTER);
+    p.text('✦', x, y);
+    p.pop();
+  }
+
+  function drawTipHeart(p, x, y, color, t) {
+    p.push();
+    p.noStroke();
+    const c = p.color(color);
+    p.fill(p.red(c), p.green(c), p.blue(c), 0.18);
+    p.ellipse(x, y, 28, 28);
+    p.fill(p.red(c), p.green(c), p.blue(c), 0.35);
+    p.ellipse(x, y, 16, 16);
+    p.textSize(14 + Math.sin(t * 2) * 2);
+    p.textAlign(p.CENTER, p.CENTER);
+    p.text('💗', x, y);
+    p.pop();
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  PARTICLE CLASSES
+  // ─────────────────────────────────────────────────────────────
+
+  class Spark {
+    constructor(p, x, y, color) {
+      this.p = p;
+      this.x = x; this.y = y;
+      this.vx = p.random(-2.5, 2.5);
+      this.vy = p.random(-3.5, -0.5);
+      this.color = color;
+      this.life = 1;
+      this.decay = p.random(0.025, 0.055);
+      this.size  = p.random(2, 5);
+      this.alive = true;
+    }
+    update() {
+      this.x  += this.vx;
+      this.y  += this.vy;
+      this.vy += 0.08;
+      this.life -= this.decay;
+      if (this.life <= 0) this.alive = false;
+    }
+    draw() {
+      const p = this.p;
+      p.push();
+      const c = p.color(this.color);
+      p.noStroke();
+      p.fill(p.red(c), p.green(c), p.blue(c), this.life * 0.8);
+      p.ellipse(this.x, this.y, this.size * this.life, this.size * this.life);
+      p.fill(p.red(c), p.green(c), p.blue(c), this.life * 0.25);
+      p.ellipse(this.x, this.y, this.size * 3 * this.life, this.size * 3 * this.life);
+      p.pop();
+    }
+  }
+
+  class FloatingHeart {
+    constructor(p, x, y) {
+      this.p = p;
+      this.x = x; this.y = y;
+      this.vx = p.random(-0.8, 0.8);
+      this.vy = p.random(-1.8, -0.8);
+      this.life = 1;
+      this.decay = p.random(0.006, 0.016);
+      this.size  = p.random(16, 36);
+      this.rot   = p.random(-0.03, 0.03);
+      this.angle = 0;
+      this.alive = true;
+      this.emojis = ['💕','💖','💗','💓','💞','❤️','🩷'];
+      this.emoji  = this.emojis[Math.floor(p.random(this.emojis.length))];
+    }
+    update() {
+      this.x += this.vx + Math.sin(this.angle) * 0.4;
+      this.y += this.vy;
+      this.angle += 0.04;
+      this.life  -= this.decay;
+      if (this.life <= 0) this.alive = false;
+    }
+    draw() {
+      const p = this.p;
+      p.push();
+      p.textSize(this.size * this.life);
+      p.textAlign(p.CENTER, p.CENTER);
+      p.drawingContext.globalAlpha = this.life;
+      p.text(this.emoji, this.x, this.y);
+      p.drawingContext.globalAlpha = 1;
+      p.pop();
+    }
+  }
+
+  class Glitter {
+    constructor(p, x, y) {
+      this.p = p;
+      this.x = x + p.random(-20, 20);
+      this.y = y + p.random(-20, 20);
+      this.vx = p.random(-1, 1);
+      this.vy = p.random(-1, 1);
+      this.life = 1;
+      this.decay = p.random(0.03, 0.07);
+      this.size  = p.random(3, 8);
+      this.alive = true;
+      this.hue   = p.random(300, 360);
+    }
+    update() {
+      this.x += this.vx;
+      this.y += this.vy;
+      this.life -= this.decay;
+      if (this.life <= 0) this.alive = false;
+    }
+    draw() {
+      const p = this.p;
+      p.push();
+      p.noStroke();
+      p.fill(255, 200, 220, this.life);
+      const s = this.size * this.life;
+      p.push();
+      p.translate(this.x, this.y);
+      p.rotate(this.life * 3);
+      p.beginShape();
+      for (let i = 0; i < 4; i++) {
+        const a1 = (i * Math.PI / 2);
+        const a2 = a1 + Math.PI / 4;
+        p.vertex(Math.cos(a1) * s, Math.sin(a1) * s);
+        p.vertex(Math.cos(a2) * s * 0.35, Math.sin(a2) * s * 0.35);
+      }
+      p.endShape(p.CLOSE);
+      p.pop();
+      p.pop();
+    }
+  }
+
+}; // end sketch
+
+// ─────────────────────────────────────────────────────────────
+//  BOOT
+// ─────────────────────────────────────────────────────────────
+(async () => {
+  await enumerateCameras();
+  await startCamera(currentCamId);
+  new p5(sketch);
+})();
+</script>
+</body>
+</html>
